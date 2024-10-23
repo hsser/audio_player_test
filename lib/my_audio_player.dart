@@ -13,7 +13,6 @@ class MyAudioPlayer extends StatefulWidget {
 class _MyPlayerState extends State<MyAudioPlayer> {
   AudioPlayer audioPlayer = AudioPlayer();
   PlayerState playerState = PlayerState.paused;
-  //Duration currentSongDuration = const Duration();
   Duration currentPosition = const Duration();
   Song? currentSong;
   int? currentSongIndex;
@@ -28,13 +27,6 @@ class _MyPlayerState extends State<MyAudioPlayer> {
         playerState = state;
       });
     });
-
-    // // Listen to the duration changes of the current song, used to update the slider
-    // audioPlayer.onDurationChanged.listen((Duration duration) {
-    //   setState(() {
-    //     currentSongDuration = duration;
-    //   });
-    // });
 
     // Listen to the position changes of the current song, used to update the slider
     audioPlayer.onPositionChanged.listen((Duration position) {
@@ -51,6 +43,7 @@ class _MyPlayerState extends State<MyAudioPlayer> {
   @override
   void dispose() {
     super.dispose(); // Call the super class
+    audioPlayer.stop(); // Stop the audio player
     audioPlayer.dispose(); // Dispose the audio player
     audioPlayer.release(); // Release the audio player
   }
@@ -110,10 +103,10 @@ class _MyPlayerState extends State<MyAudioPlayer> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.1,
+                  height: MediaQuery.of(context).size.height * 0.125,
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(left: 16, top: 16),
+                  padding: const EdgeInsets.only(left: 16),
                   child: Text(
                     'My Playlist',
                     style: TextStyle(
@@ -174,11 +167,9 @@ class _MyPlayerState extends State<MyAudioPlayer> {
             ),
           ),
           Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: Colors.grey.shade900,
-            ),
-            margin: const EdgeInsets.all(10),
+            width: double.infinity,
+            height: MediaQuery.of(context).size.height * 0.125,
+            color: Colors.grey.shade900,
             child: Column(
               children: [
                 SliderTheme(
