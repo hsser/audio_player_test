@@ -7,31 +7,36 @@ class MyAudioPlayer extends StatefulWidget {
   const MyAudioPlayer({super.key});
 
   @override
-  _MyPlayerState createState() => _MyPlayerState();
+  State<MyAudioPlayer> createState() => _MyPlayerState();
 }
 
 class _MyPlayerState extends State<MyAudioPlayer> {
   AudioPlayer audioPlayer = AudioPlayer();
   PlayerState playerState = PlayerState.paused;
-  Duration duration = const Duration();
+  //Duration currentSongDuration = const Duration();
   Duration currentPosition = const Duration();
-  late Song currentSong;
+  Song? currentSong;
   int? currentSongIndex;
 
   @override
   void initState() {
     super.initState();
+
+    // Listen to the player state changes
     audioPlayer.onPlayerStateChanged.listen((PlayerState state) {
       setState(() {
         playerState = state;
       });
     });
-    audioPlayer.onDurationChanged.listen((Duration d) {
-      setState(() {
-        duration = d;
-      });
-    });
 
+    // // Listen to the duration changes of the current song, used to update the slider
+    // audioPlayer.onDurationChanged.listen((Duration duration) {
+    //   setState(() {
+    //     currentSongDuration = duration;
+    //   });
+    // });
+
+    // Listen to the position changes of the current song, used to update the slider
     audioPlayer.onPositionChanged.listen((Duration position) {
       setState(() {
         currentPosition = position;
@@ -40,6 +45,7 @@ class _MyPlayerState extends State<MyAudioPlayer> {
 
     // Set the first song as the current song
     currentSong = SongRepository.songs.first;
+    // currentSongIndex = 0;
   }
 
   @override
@@ -50,7 +56,8 @@ class _MyPlayerState extends State<MyAudioPlayer> {
   }
 
   Future<void> playMusic() async {
-    await audioPlayer.play(UrlSource(currentSong.url));
+    currentSongIndex ??= 0; // used to trigger the tile selection color
+    await audioPlayer.play(UrlSource(currentSong!.url));
   }
 
   Future<void> pauseMusic() async {
@@ -63,9 +70,29 @@ class _MyPlayerState extends State<MyAudioPlayer> {
 
   Future<void> stopMusic() async {
     await audioPlayer.stop();
-    setState(() {
-      currentPosition = const Duration();
-    });
+    currentPosition = const Duration();
+  }
+
+  void skipToNext() {
+    if (currentSongIndex! < SongRepository.songs.length - 1) {
+      setState(() {
+        currentSong = SongRepository.songs[currentSongIndex! + 1];
+        currentSongIndex = currentSongIndex! + 1;
+        currentPosition = const Duration();
+      });
+      playMusic();
+    }
+  }
+
+  void skipToPrevious() {
+    if (currentSongIndex! > 0) {
+      setState(() {
+        currentSong = SongRepository.songs[currentSongIndex! - 1];
+        currentSongIndex = currentSongIndex! - 1;
+        currentPosition = const Duration();
+      });
+      playMusic();
+    }
   }
 
   @override
@@ -131,6 +158,7 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                   onTap: () {
                     setState(() {
                       currentSong = SongRepository.songs[index];
+                      currentPosition = const Duration();
                       currentSongIndex = index;
                       playMusic();
                     });
@@ -178,7 +206,7 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                   child: Slider(
                     value: currentPosition.inSeconds.toDouble(),
                     min: 0,
-                    max: currentSong.duration.inSeconds.toDouble(),
+                    max: currentSong!.duration.inSeconds.toDouble(),
                     label: currentPosition
                         .toString() // 0:00:00.000000
                         .split('.') // [0:00:00, 000000]
@@ -201,7 +229,7 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                           size: 40,
                         ),
                         onPressed: () {
-                          // Implement skip functionality
+                          skipToPrevious();
                         },
                       ),
                       IconButton(
@@ -236,7 +264,7 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                           size: 40,
                         ),
                         onPressed: () {
-                          // Implement skip functionality
+                          skipToNext();
                         },
                       ),
                     ],
