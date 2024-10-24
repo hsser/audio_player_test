@@ -14,6 +14,7 @@ class _MyPlayerState extends State<MyAudioPlayer> {
   AudioPlayer audioPlayer = AudioPlayer();
   PlayerState playerState = PlayerState.paused;
   Duration currentPosition = const Duration();
+  Duration currentDuration = const Duration();
   Song? currentSong;
   int? currentSongIndex;
 
@@ -35,6 +36,13 @@ class _MyPlayerState extends State<MyAudioPlayer> {
       });
     });
 
+    // Listen to the duration changes of the current song
+    audioPlayer.onDurationChanged.listen((Duration duration) {
+      setState(() {
+        currentDuration = duration;
+      });
+    });
+
     // Set the first song as the current song
     currentSong = SongRepository.songs.first;
     // currentSongIndex = 0;
@@ -42,6 +50,7 @@ class _MyPlayerState extends State<MyAudioPlayer> {
 
   @override
   void dispose() {
+    print('dispose!');
     super.dispose(); // Call the super class
     audioPlayer.stop(); // Stop the audio player
     audioPlayer.dispose(); // Dispose the audio player
@@ -49,6 +58,7 @@ class _MyPlayerState extends State<MyAudioPlayer> {
   }
 
   Future<void> playMusic() async {
+    //print('Duration: $currentDuration');
     currentSongIndex ??= 0; // used to trigger the tile selection color
     await audioPlayer.play(UrlSource(currentSong!.url));
   }
@@ -197,7 +207,7 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                   child: Slider(
                     value: currentPosition.inSeconds.toDouble(),
                     min: 0,
-                    max: currentSong!.duration.inSeconds.toDouble(),
+                    max: currentDuration.inSeconds.toDouble(),
                     label: currentPosition
                         .toString() // 0:00:00.000000
                         .split('.') // [0:00:00, 000000]
