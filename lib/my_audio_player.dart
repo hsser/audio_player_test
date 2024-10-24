@@ -25,9 +25,10 @@ class _MyPlayerState extends State<MyAudioPlayer> {
 
     // Listen to player state changes
     _player.playerStateStream.listen((playerState) {
+      // When the current song is completed, stop the audio, and reset the current position
       if (playerState.processingState == ProcessingState.completed) {
         setState(() {
-          _currentPosition = Duration.zero;
+          _onStop();
         });
       }
     });
@@ -81,9 +82,8 @@ class _MyPlayerState extends State<MyAudioPlayer> {
   }
 
   void _onStop() async {
-    _currentPosition = Duration.zero;
     await _player.stop(); // stop the audio but current position is not reset
-    _setSource();
+    _onSeek(0); // reset the current position
   }
 
   @override
@@ -150,7 +150,6 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                     setState(() {
                       _currentSong = Playlist.songs[index];
                       _setSource();
-                      _currentPosition = Duration.zero;
                       _currentSongIndex = index;
                       _onPlay();
                     });
