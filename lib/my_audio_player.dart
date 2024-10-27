@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+
 import 'playlist.dart';
 
 class MyAudioPlayer extends StatefulWidget {
@@ -11,24 +12,33 @@ class MyAudioPlayer extends StatefulWidget {
 
 class _MyPlayerState extends State<MyAudioPlayer> {
   final AudioPlayer _player = AudioPlayer();
-  late UriAudioSource _currentSong;
-  int? _currentSongIndex;
-  //PlayerState _currentState = PlayerState(false, ProcessingState.idle);
+  int? _currentSongIndex = 0;
   Duration _currentPosition = Duration.zero;
   Duration _currentDuration = Duration.zero;
 
   @override
   void initState() {
     super.initState();
-    _currentSong = Playlist.songs.first; // Set the current song
-    _player.setAudioSource(_currentSong); // Set the audio source
+    // _currentSong = Playlist.songs.children[0]; //
+    _player.setAudioSource(Playlist.songs); // Set the audio source
 
     // Listen to player state changes
     _player.playerStateStream.listen((playerState) {
-      // When the current song is completed, stop the audio, and reset the current position
       if (playerState.processingState == ProcessingState.completed) {
+        // _player.seekToNext();
         setState(() {
-          _onStop();
+          _currentSongIndex = 0;
+          _currentPosition = Duration.zero;
+          _onPlay();
+        });
+      }
+    });
+
+    //Listen to current song index, index related to sequenceStateStream
+    _player.currentIndexStream.listen((index) {
+      if (index != null) {
+        setState(() {
+          _currentSongIndex = index;
         });
       }
     });
@@ -62,13 +72,16 @@ class _MyPlayerState extends State<MyAudioPlayer> {
     return '$minutes:$seconds';
   }
 
-  void _setSource() async {
-    await _player.setAudioSource(_currentSong);
-  }
+//****** */
+  // void _setSource() async {
+  //   await _player.setAudioSource(_currentSong);
+  // }
 
   void _onPlay() async {
-    _currentSongIndex ??= 0; // Set the current song index if null
-    await _player.play(); // Play the audio
+    if (_currentSongIndex != null && _currentPosition == Duration.zero) {
+      await _player.seek(Duration.zero, index: _currentSongIndex);
+    }
+    await _player.play();
   }
 
   void _onPause() async {
@@ -117,7 +130,8 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                 Padding(
                   padding: const EdgeInsets.only(left: 16),
                   child: Text(
-                    '${Playlist.songs.length} songs',
+                    //******* */
+                    '${Playlist.songs.children.length} songs',
                     style: TextStyle(
                       color: Colors.grey.shade600,
                       fontSize: 18,
@@ -131,7 +145,8 @@ class _MyPlayerState extends State<MyAudioPlayer> {
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: Playlist.songs.length,
+              //****** */
+              itemCount: Playlist.songs.children.length,
               itemBuilder: (context, index) {
                 return ListTile(
                   titleTextStyle: TextStyle(
@@ -144,21 +159,25 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                   ),
-                  title: Text(Playlist.songs[index].tag.title),
-                  subtitle: Text(Playlist.songs[index].tag.artist),
-                  onTap: () {
+                  title: Text((Playlist.songs.children[index] as UriAudioSource)
+                      .tag
+                      .title),
+                  subtitle: Text(
+                      (Playlist.songs.children[index] as UriAudioSource)
+                          .tag
+                          .artist),
+                  onTap: () async {
                     setState(() {
-                      _currentSong = Playlist.songs[index];
-                      _setSource();
                       _currentSongIndex = index;
-                      _onPlay();
+                      _currentPosition = Duration.zero;
                     });
+                    _onPlay();
                   },
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                   selected: _currentSongIndex == index,
-                  selectedTileColor: const Color.fromARGB(146, 234, 235, 232),
+                  selectedTileColor: const Color.fromARGB(146, 231, 234, 229),
                   selectedColor: Colors.grey.shade900,
                 );
               },
@@ -228,8 +247,12 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                           color: Colors.white,
                           size: 40,
                         ),
-                        onPressed: () {
-                          //skipToPrevious();
+                        onPressed: () async {
+                          _currentSongIndex = (_currentSongIndex! - 1) %
+                              (Playlist.songs.children.length);
+                          await _player.seek(Duration.zero,
+                              index: _currentSongIndex);
+                          _player.play();
                         },
                       ),
                       IconButton(
@@ -263,8 +286,14 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                           color: Colors.white,
                           size: 40,
                         ),
-                        onPressed: () {
-                          //skipToNext();
+                        onPressed: () async {
+                          //next related to the loopMode
+                          // _player.hasNext ? await _player.seekToNext() : null;
+                          _currentSongIndex = (_currentSongIndex! + 1) %
+                              (Playlist.songs.children.length);
+                          await _player.seek(Duration.zero,
+                              index: _currentSongIndex);
+                          await _player.play();
                         },
                       ),
                     ],
