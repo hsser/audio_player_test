@@ -31,6 +31,11 @@ class _MyPlayerState extends State<MyAudioPlayer> {
           //_currentPosition = Duration.zero;
         });
         await _player.seek(Duration.zero, index: _currentSongIndex);
+        // if _player.stop(), just_audio will free resource from the web url,
+        // generally has some buffered resources which can still be used, but it is safer to perform checks,even refetch data.
+        if (_player.audioSource == null) {
+          await _player.setAudioSource(Playlist.songs);
+        }
         await _player.play();
       }
     });
@@ -147,6 +152,9 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                     });
                     // Seek to the beginning of the selected song
                     await _player.seek(Duration.zero, index: index);
+                    if (_player.audioSource == null) {
+                      await _player.setAudioSource(Playlist.songs);
+                    }
                     await _player.play();
                   },
                   shape: RoundedRectangleBorder(
@@ -224,6 +232,9 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                               (Playlist.songs.children.length);
                           await _player.seek(Duration.zero,
                               index: _currentSongIndex);
+                          if (_player.audioSource == null) {
+                            await _player.setAudioSource(Playlist.songs);
+                          }
                           await _player.play();
                         },
                       ),
@@ -238,6 +249,9 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                           if (_player.playing) {
                             await _player.pause();
                           } else {
+                            if (_player.audioSource == null) {
+                              await _player.setAudioSource(Playlist.songs);
+                            }
                             await _player.play();
                           }
                         },
@@ -266,6 +280,9 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                               (Playlist.songs.children.length);
                           await _player.seek(Duration.zero,
                               index: _currentSongIndex);
+                          if (_player.audioSource == null) {
+                            await _player.setAudioSource(Playlist.songs);
+                          }
                           await _player.play();
                         },
                       ),
