@@ -23,14 +23,15 @@ class _MyPlayerState extends State<MyAudioPlayer> {
     _player.setAudioSource(Playlist.songs); // Set the audio source
 
     // Listen to player state changes
-    _player.playerStateStream.listen((playerState) {
+    _player.playerStateStream.listen((playerState) async {
       if (playerState.processingState == ProcessingState.completed) {
         // _player.seekToNext();
         setState(() {
           _currentSongIndex = 0;
-          _currentPosition = Duration.zero;
-          _onPlay();
+          //_currentPosition = Duration.zero;
         });
+        await _player.seek(Duration.zero, index: _currentSongIndex);
+        await _player.play();
       }
     });
 
@@ -66,37 +67,10 @@ class _MyPlayerState extends State<MyAudioPlayer> {
     super.dispose();
   }
 
-  String formatDuration(Duration duration) {
+  String _formatDuration(Duration duration) {
     final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$minutes:$seconds';
-  }
-
-//****** */
-  // void _setSource() async {
-  //   await _player.setAudioSource(_currentSong);
-  // }
-
-  void _onPlay() async {
-    if (_currentSongIndex != null && _currentPosition == Duration.zero) {
-      await _player.seek(Duration.zero, index: _currentSongIndex);
-    }
-    await _player.play();
-  }
-
-  void _onPause() async {
-    if (_player.playing) {
-      await _player.pause();
-    }
-  }
-
-  void _onSeek(double value) async {
-    await _player.seek(Duration(seconds: value.toInt()));
-  }
-
-  void _onStop() async {
-    await _player.stop(); // stop the audio but current position is not reset
-    _onSeek(0); // reset the current position
   }
 
   @override
@@ -169,9 +143,11 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                   onTap: () async {
                     setState(() {
                       _currentSongIndex = index;
-                      _currentPosition = Duration.zero;
+                      //_currentPosition = Duration.zero;
                     });
-                    _onPlay();
+                    // Seek to the beginning of the selected song
+                    await _player.seek(Duration.zero, index: index);
+                    await _player.play();
                   },
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -194,7 +170,7 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                   height: 10,
                 ),
                 Text(
-                  formatDuration(_currentPosition),
+                  _formatDuration(_currentPosition),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -226,13 +202,9 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                     value: _currentPosition.inSeconds.toDouble(),
                     min: 0,
                     max: _currentDuration.inSeconds.toDouble(),
-                    label: _currentPosition
-                        .toString() // 0:00:00.000000
-                        .split('.') // [0:00:00, 000000]
-                        .first // 0:00:00
-                        .substring(2), // 00:00
-                    onChanged: (value) {
-                      _onSeek(value);
+                    label: _formatDuration(_currentPosition),
+                    onChanged: (value) async {
+                      await _player.seek(Duration(seconds: value.toInt()));
                     },
                   ),
                 ),
@@ -252,7 +224,7 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                               (Playlist.songs.children.length);
                           await _player.seek(Duration.zero,
                               index: _currentSongIndex);
-                          _player.play();
+                          await _player.play();
                         },
                       ),
                       IconButton(
@@ -262,11 +234,11 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                                 : Icons.play_arrow_rounded,
                             color: Colors.white,
                             size: 40),
-                        onPressed: () {
+                        onPressed: () async {
                           if (_player.playing) {
-                            _onPause();
+                            await _player.pause();
                           } else {
-                            _onPlay();
+                            await _player.play();
                           }
                         },
                       ),
@@ -276,8 +248,9 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                           color: Colors.white,
                           size: 40,
                         ),
-                        onPressed: () {
-                          _onStop();
+                        onPressed: () async {
+                          await _player.stop();
+                          await _player.seek(Duration.zero);
                         },
                       ),
                       IconButton(
