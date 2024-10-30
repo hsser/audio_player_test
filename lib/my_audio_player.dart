@@ -88,13 +88,13 @@ class _MyPlayerState extends State<MyAudioPlayer> {
             Container(
               padding: const EdgeInsets.all(16),
               width: double.infinity,
-              height: MediaQuery.of(context).size.height * 0.25,
+              height: MediaQuery.of(context).size.height * 0.20,
               color: const Color.fromARGB(255, 201, 236, 127),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.125,
+                    height: MediaQuery.of(context).size.height * 0.05,
                   ),
                   Padding(
                     padding: const EdgeInsets.only(left: 16),
@@ -171,7 +171,7 @@ class _MyPlayerState extends State<MyAudioPlayer> {
             ),
             Container(
               width: double.infinity,
-              height: MediaQuery.of(context).size.height * 0.15,
+              height: MediaQuery.of(context).size.height * 0.19,
               color: Colors.grey.shade900,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
