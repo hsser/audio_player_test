@@ -12,6 +12,7 @@ class MyAudioPlayer extends StatefulWidget {
 
 class _MyPlayerState extends State<MyAudioPlayer> {
   final AudioPlayer _player = AudioPlayer();
+  final ScrollController _scrollController = ScrollController(); // Add ScrollController
   int? _currentSongIndex = 0;
   Duration _currentPosition = Duration.zero;
   Duration _currentDuration = Duration.zero;
@@ -19,28 +20,30 @@ class _MyPlayerState extends State<MyAudioPlayer> {
   @override
   void initState() {
     super.initState();
-    // _currentSong = Playlist.songs.children[0]; //
-    _player.setAudioSource(Playlist.songs); // Set the audio source
+    _player.setAudioSource(Playlist.songs);
 
     // Listen to player state changes
     _player.playerStateStream.listen((playerState) async {
       if (playerState.processingState == ProcessingState.completed) {
-        // _player.seekToNext();
         setState(() {
           _currentSongIndex = 0;
-          //_currentPosition = Duration.zero;
         });
         await _player.seek(Duration.zero, index: _currentSongIndex);
-        // if _player.stop(), just_audio will free resource from the web url,
-        // generally has some buffered resources which can still be used, but it is safer to perform checks,even refetch data.
         if (_player.audioSource == null) {
           await _player.setAudioSource(Playlist.songs);
         }
         await _player.play();
+        
+        // Scroll to top when playlist restarts
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
       }
     });
 
-    //Listen to current song index, index related to sequenceStateStream
+    //Listen to current song index
     _player.currentIndexStream.listen((index) {
       if (index != null) {
         setState(() {
@@ -60,7 +63,7 @@ class _MyPlayerState extends State<MyAudioPlayer> {
     _player.durationStream.listen((duration) {
       if (duration != null) {
         setState(() {
-          _currentDuration = duration; // Duration is non-nullable
+          _currentDuration = duration;
         });
       }
     });
@@ -68,7 +71,8 @@ class _MyPlayerState extends State<MyAudioPlayer> {
 
   @override
   void dispose() {
-    _player.dispose(); // Dispose the player
+    _player.dispose();
+    _scrollController.dispose(); // Dispose the ScrollController
     super.dispose();
   }
 
@@ -87,8 +91,6 @@ class _MyPlayerState extends State<MyAudioPlayer> {
           Container(
             padding: const EdgeInsets.all(16),
             width: double.infinity,
-            // UI adaptation
-            // height: MediaQuery.of(context).size.height * 0.25,
             color: const Color.fromARGB(255, 201, 236, 127),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,7 +112,6 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                 Padding(
                   padding: const EdgeInsets.only(left: 16),
                   child: Text(
-                    //******* */
                     '${Playlist.songs.children.length} songs',
                     style: TextStyle(
                       color: Colors.grey.shade600,
@@ -124,8 +125,8 @@ class _MyPlayerState extends State<MyAudioPlayer> {
           ),
           Expanded(
             child: ListView.builder(
+              controller: _scrollController, // Add ScrollController here
               padding: const EdgeInsets.all(16),
-              //****** */
               itemCount: Playlist.songs.children.length,
               itemBuilder: (context, index) {
                 return ListTile(
@@ -139,19 +140,12 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                   ),
-                  title: Text((Playlist.songs.children[index] as UriAudioSource)
-                      .tag
-                      .title),
-                  subtitle: Text(
-                      (Playlist.songs.children[index] as UriAudioSource)
-                          .tag
-                          .artist),
+                  title: Text((Playlist.songs.children[index] as UriAudioSource).tag.title),
+                  subtitle: Text((Playlist.songs.children[index] as UriAudioSource).tag.artist),
                   onTap: () async {
                     setState(() {
                       _currentSongIndex = index;
-                      //_currentPosition = Duration.zero;
                     });
-                    // Seek to the beginning of the selected song
                     await _player.seek(Duration.zero, index: index);
                     if (_player.audioSource == null) {
                       await _player.setAudioSource(Playlist.songs);
@@ -170,15 +164,11 @@ class _MyPlayerState extends State<MyAudioPlayer> {
           ),
           Container(
             width: double.infinity,
-            // UI adaptation
-            // height: MediaQuery.of(context).size.height * 0.15,
             color: Colors.grey.shade900,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                SizedBox(
-                  height: 10,
-                ),
+                const SizedBox(height: 10),
                 Text(
                   _formatDuration(_currentPosition),
                   style: const TextStyle(
@@ -189,20 +179,16 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                 SliderTheme(
                   data: SliderThemeData(
                     trackHeight: 5,
-                    thumbShape:
-                        const RoundSliderThumbShape(enabledThumbRadius: 8),
+                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
                     thumbColor: const Color.fromARGB(255, 201, 236, 127),
-                    overlayShape:
-                        const RoundSliderOverlayShape(overlayRadius: 20),
+                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 20),
                     overlayColor: const Color.fromARGB(100, 201, 236, 127),
                     activeTrackColor: const Color.fromARGB(255, 201, 236, 127),
                     inactiveTrackColor: Colors.white,
                     tickMarkShape: const RoundSliderTickMarkShape(),
                     showValueIndicator: ShowValueIndicator.always,
-                    valueIndicatorShape:
-                        const PaddleSliderValueIndicatorShape(),
-                    valueIndicatorColor:
-                        const Color.fromARGB(255, 201, 236, 127),
+                    valueIndicatorShape: const PaddleSliderValueIndicatorShape(),
+                    valueIndicatorColor: const Color.fromARGB(255, 201, 236, 127),
                     valueIndicatorTextStyle: TextStyle(
                       color: Colors.grey.shade800,
                       fontSize: 16,
@@ -230,10 +216,8 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                           size: 40,
                         ),
                         onPressed: () async {
-                          _currentSongIndex = (_currentSongIndex! - 1) %
-                              (Playlist.songs.children.length);
-                          await _player.seek(Duration.zero,
-                              index: _currentSongIndex);
+                          _currentSongIndex = (_currentSongIndex! - 1) % (Playlist.songs.children.length);
+                          await _player.seek(Duration.zero, index: _currentSongIndex);
                           if (_player.audioSource == null) {
                             await _player.setAudioSource(Playlist.songs);
                           }
@@ -242,11 +226,10 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                       ),
                       IconButton(
                         icon: Icon(
-                            _player.playing
-                                ? Icons.pause_circle
-                                : Icons.play_arrow_rounded,
-                            color: Colors.white,
-                            size: 40),
+                          _player.playing ? Icons.pause_circle : Icons.play_arrow_rounded,
+                          color: Colors.white,
+                          size: 40,
+                        ),
                         onPressed: () async {
                           if (_player.playing) {
                             await _player.pause();
@@ -276,12 +259,8 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                           size: 40,
                         ),
                         onPressed: () async {
-                          //next related to the loopMode
-                          // _player.hasNext ? await _player.seekToNext() : null;
-                          _currentSongIndex = (_currentSongIndex! + 1) %
-                              (Playlist.songs.children.length);
-                          await _player.seek(Duration.zero,
-                              index: _currentSongIndex);
+                          _currentSongIndex = (_currentSongIndex! + 1) % (Playlist.songs.children.length);
+                          await _player.seek(Duration.zero, index: _currentSongIndex);
                           if (_player.audioSource == null) {
                             await _player.setAudioSource(Playlist.songs);
                           }
@@ -291,10 +270,7 @@ class _MyPlayerState extends State<MyAudioPlayer> {
                     ],
                   ),
                 ),
-                // UI adaptation
-                SizedBox(
-                  height: 20,
-                ),
+                const SizedBox(height: 20),
               ],
             ),
           ),
